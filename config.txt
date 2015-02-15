@@ -1,0 +1,3 @@
+# Config file for Neo Savegame Scavenger, DO NOT MODIFY MANUALLY!
+SaveFolderPath=C:\Users\Utente\AppData\Roaming\Macromedia\Flash Player\#SharedObjects\8BF6TYEX
+BackupFolderPath=D:\myneoscavengerbackup
