@@ -58,7 +58,7 @@ public class RestoreFrame extends JFrame {
         backgroundColor=parent.getBgColor();
         inManager = new InputManager();
         setBounds(50, 30, 175, 250);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setUndecorated(false);
         setTitle("NeoSavegameScavenger - Restore");
         getContentPane().setBackground(backgroundColor);

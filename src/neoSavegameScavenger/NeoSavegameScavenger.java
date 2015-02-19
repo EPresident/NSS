@@ -43,6 +43,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.StringTokenizer;
+import java.util.regex.Pattern;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -55,9 +56,9 @@ import javax.swing.JPanel;
 
 /**
  * Main class and frame for the NSS.
+ *
  * @author Elia Calligaris
  */
-
 public class NeoSavegameScavenger extends JFrame {
 
     private final JButton backupBtn, optionsBtn, restoreBtn, restoreLastBtn, clearBtn, helpBtn;
@@ -66,7 +67,47 @@ public class NeoSavegameScavenger extends JFrame {
             savegameFolderPath = "";
     // protected final static String configPath = "/neoSavegameScavenger/config.txt";
 
-    private final String[] saveFileNames = {"flixel.sol", "nsPrefsv1.sol", "nsSGv1.sol"};
+    /**
+     * Pattern for "filename.sol"
+     */
+    private final Pattern saveFilePattern = Pattern.compile("\\w*\\.sol");
+    /**
+     * Pattern for "YYYY_MM_DD HH-MM-SS anythingelse"
+     */
+    private final Pattern bkpDirPattern = Pattern.compile("\\d\\d\\d\\d_\\d\\d_\\d\\d \\d\\d-\\d\\d-\\d\\d.*");
+    /**
+     * FilenameFilter that accepts all directories.
+     *
+     * @see FilenameFilter
+     */
+    private final FilenameFilter directoryFilter = new FilenameFilter() {
+        @Override
+        public boolean accept(File current, String name) {
+            return new File(current, name).isDirectory();
+        }
+    };
+    /**
+     * FilenameFilter that accepts all files with .sol extension.
+     *
+     * @see FilenameFilter
+     */
+    private final FilenameFilter savefileFilter = new FilenameFilter() {
+        @Override
+        public boolean accept(File current, String name) {
+            return saveFilePattern.matcher(name).matches();
+        }
+    };
+    /**
+     * FilenameFilter that accepts directories that match bkpDirPattern.
+     *
+     * @see FilenameFilter
+     */
+    private final FilenameFilter bkpFolderFilter = new FilenameFilter() {
+        @Override
+        public boolean accept(File current, String name) {
+            return saveFilePattern.matcher(name).matches() && new File(current, name).isDirectory();
+        }
+    };
     private final int BTN_OFFSET = 5;
     private final int BTN_PANEL_Y_PADDING = 10;
     private final int INSETS_X = 2, INSETS_Y = 0;
@@ -243,7 +284,7 @@ public class NeoSavegameScavenger extends JFrame {
     }
 
     private void performBackup() {
-        if (savegameFolderPath != null && backupFolderPath != null) {
+        if (!savegameFolderPath.equals("") && !backupFolderPath.equals("")) {
             // Backup the savegame
             File bakDir = new File(backupFolderPath);
             if (!bakDir.exists()) {
@@ -256,32 +297,30 @@ public class NeoSavegameScavenger extends JFrame {
             DateFormat date = new SimpleDateFormat("yyyy_MM_dd HH-mm-ss");
             File saveBak = new File("" + backupFolderPath + "/" + date.format(Calendar.getInstance().getTime()));
             saveBak.mkdir();
+            // Check if creation succeded
             if (!saveBak.exists()) {
-                //System.err.println("Error: Directory not created");
                 JOptionPane.showMessageDialog(this, "Failed to create the new save backup.", "Backup error", JOptionPane.ERROR_MESSAGE);
-            } else {
-                //System.out.println("Created backup: " + date.format(Calendar.getInstance().getTime()));
             }
+            // Get all save files (*.sol)
+            File[] sourceFiles = new File(savegameFolderPath).listFiles(savefileFilter);
             // Copy the files from the current save to the backup folder
-            for (int i = 0; i < 3; i++) {
-                File source = new File(savegameFolderPath + "/" + saveFileNames[i]);
-                File target = new File("" + saveBak.getPath() + "/" + saveFileNames[i]);
+            for (File f : sourceFiles) {
+                File copy = new File(saveBak, f.getName());
                 try {
-                    Files.copy(Paths.get(source.getPath()), Paths.get(target.getPath()), NOFOLLOW_LINKS);
+                    Files.copy(Paths.get(f.getPath()), Paths.get(copy.getPath()), NOFOLLOW_LINKS);
                 } catch (IOException ex) {
                     System.err.println(ex.getMessage());
                 }
             }
 
-            JOptionPane.showMessageDialog(this, "Backup successful in folder " + saveBak.getName(), "Backup done", JOptionPane.PLAIN_MESSAGE);
+            JOptionPane.showMessageDialog(this, sourceFiles.length + " files backed up in folder "
+                    + saveBak.getName(), "Backup done", JOptionPane.INFORMATION_MESSAGE);
 
         } else {
             // Some paths are missing!
-            if (savegameFolderPath.equals("")) {
-                JOptionPane.showMessageDialog(this, "Savegame directory path is missing.", "Backup error", JOptionPane.ERROR_MESSAGE);
-            } else {
-                JOptionPane.showMessageDialog(this, "Backup directory path is missing.", "Backup error", JOptionPane.ERROR_MESSAGE);
-            }
+            JOptionPane.showMessageDialog(this, "Savegame and/or backup folder paths are missing. "
+                    + "Please check the options menu before reattempting this operation.",
+                    "Backup error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -289,20 +328,16 @@ public class NeoSavegameScavenger extends JFrame {
         // Ask for confirmation
         // Yes is 0 and No is 1
         int confirmation = JOptionPane.showConfirmDialog(this,
-                "Are you sure you want to restore your last backup? \nThe current savegame will be overwritten, if present.", "Confirm restore last save", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+                "Are you sure you want to restore your last backup? \nThe current savegame will be overwritten, if present.",
+                "Confirm restore last save", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
         if (confirmation == 0) {
             // Perform the actual restore
             File backupFolder = new File(backupFolderPath);
             if (backupFolder.exists()) {
                 // get all backup names
-                String[] subDirs = backupFolder.list(new FilenameFilter() {
-                    @Override
-                    public boolean accept(File current, String name) {
-                        return new File(current, name).isDirectory();
-                    }
-                });
+                String[] subDirs = backupFolder.list(bkpFolderFilter);
                 // Restore the last save
-                performRestore(backupFolderPath + "/" + subDirs[subDirs.length - 1]);
+                performRestore(backupFolderPath + "/" + getNewestFile(subDirs));
             } else {
                 JOptionPane.showMessageDialog(this, "Error: the backup folder doens't exist!", "Backup folder not found", JOptionPane.ERROR_MESSAGE);
             }
@@ -326,7 +361,8 @@ public class NeoSavegameScavenger extends JFrame {
                 // Create the folder, but ask for confirmation
                 // Yes is 0 and No is 1
                 int confirmation = JOptionPane.showConfirmDialog(this,
-                        "The specified folder for NS savegames doens't exist. \nDo you want to create it?", "Missing savegame directory", JOptionPane.YES_NO_OPTION, JOptionPane.ERROR_MESSAGE);
+                        "The specified folder for NEOScavenger savegames doens't exist. \nDo you want to create it?",
+                        "Missing savegame directory", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
                 if (confirmation == 0) {
                     saveFolder.mkdirs();
                     // Check if creation succeded
@@ -335,25 +371,31 @@ public class NeoSavegameScavenger extends JFrame {
                         return;
                     }
                 } else {
-                    JOptionPane.showMessageDialog(this, "Restore aborted! Please specify a valid path for the savegame directory", "Aborting restore", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(this, "Restore aborted! Please specify a valid path for the savegame directory",
+                            "Aborting restore", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
                 //</editor-fold>
             }
             //<editor-fold desc="Actual restore">
-            for (int i = 0; i < 3; i++) {
-                File source = new File(backupPath + "/" + saveFileNames[i]);
-                File target = new File(savegameFolderPath + "/" + saveFileNames[i]);
+            // Get all save files (*.sol)
+            File[] sourceFiles = backupFolder.listFiles(savefileFilter);
+            // Copy the files from the backup folder to the current save directory
+            for (File f : sourceFiles) {
+                File copy = new File(savegameFolderPath, f.getName());
                 try {
-                    Files.copy(Paths.get(source.getPath()), Paths.get(target.getPath()), REPLACE_EXISTING);
+                    Files.copy(Paths.get(f.getPath()), Paths.get(copy.getPath()), NOFOLLOW_LINKS);
                 } catch (IOException ex) {
                     System.err.println(ex.getMessage());
                 }
             }
             //</editor-fold>
-            JOptionPane.showMessageDialog(this, "Restore successful.", "Restore done", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Restored backup \"" + backupFolder.getName() + "\" successfully.",
+                    "Restore done", JOptionPane.INFORMATION_MESSAGE);
         } else {
-            JOptionPane.showMessageDialog(this, "Error while restoring: the backup folder doens't exist!\nThis is probably an invalid path: " + backupFolder.getPath() + "!", "Restore error: Backup folder not found", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Error while restoring: the backup folder doens't exist!\n"
+                    + "This is probably an invalid path: " + backupFolder.getPath() + "!",
+                    "Restore error: Backup folder not found", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -369,8 +411,7 @@ public class NeoSavegameScavenger extends JFrame {
             // Delete everything!
             File saveFolder = new File(savegameFolderPath);
             if (saveFolder.exists()) {
-                for (String s : saveFileNames) {
-                    File f = new File(savegameFolderPath + "/" + s);
+                for (File f : saveFolder.listFiles()) {
                     if (f.exists()) {
                         f.delete();
                         if (f.exists()) {
@@ -449,6 +490,24 @@ public class NeoSavegameScavenger extends JFrame {
             }
         } else {
             JOptionPane.showMessageDialog(this, "It seems it's the first time you run this program.\nPlease open the options menu to provide the needed folder paths.", "Config file missing", JOptionPane.INFORMATION_MESSAGE);
+        }
+    }
+
+    /**
+     * @param names An array of filenames in the "YYYY_MM_DD HH-MM-SS" format.
+     * @return
+     */
+    private String getNewestFile(String[] names) {
+        if (names.length > 0) {
+            String max = names[0];
+            for (int i = 1; i < names.length; i++) {
+                if (max.compareTo(names[i]) < 0) {
+                    max = names[i];
+                }
+            }
+            return max;
+        } else {
+            return "";
         }
     }
 
