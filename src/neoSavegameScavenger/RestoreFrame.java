@@ -46,10 +46,6 @@ import static javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER;
 import static javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS;
 import static javax.swing.SwingConstants.CENTER;
 
-/**
- *
- * @author Utente
- */
 public class RestoreFrame extends JFrame {
 
     private final InputManager inManager;
@@ -65,11 +61,10 @@ public class RestoreFrame extends JFrame {
         inManager = new InputManager();
         setBounds(50, 30, 175, 250);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setUndecorated(true);
+        setUndecorated(false);
         setTitle("NeoSavegameScavenger - Restore");
-        rootPane.setBorder(BorderFactory.createLineBorder(Color.black, 2, true));
         getContentPane().setBackground(backgroundColor);
-        setResizable(false);        
+        setResizable(true);        
         setFocusable(true);
         addKeyListener(inManager);          
         

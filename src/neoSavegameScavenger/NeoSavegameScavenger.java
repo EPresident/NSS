@@ -54,9 +54,10 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
 /**
- *
- * @author Utente
+ * Main class and frame for the NSS.
+ * @author Elia Calligaris
  */
+
 public class NeoSavegameScavenger extends JFrame {
 
     private final JButton backupBtn, optionsBtn, restoreBtn, restoreLastBtn, clearBtn, helpBtn;
@@ -69,12 +70,9 @@ public class NeoSavegameScavenger extends JFrame {
     private final int BTN_OFFSET = 5;
     private final int BTN_PANEL_Y_PADDING = 10;
     private final int INSETS_X = 2, INSETS_Y = 0;
-    private final float VERSION = 1.0f;
+    private final float VERSION = 1.001f;
     private final Color backgroundColor;
 
-    /**
-     * @param args the command line arguments
-     */
     public static void main(String[] args) {
         new NeoSavegameScavenger();
     }
@@ -84,13 +82,15 @@ public class NeoSavegameScavenger extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setTitle("NSS v" + VERSION);
         setLayout(new BorderLayout());
-        setResizable(false);
+        setResizable(true);
         inManager = new InputManager();
         addKeyListener(inManager);
         setFocusable(true);
         backgroundColor = Color.darkGray;
 
         //<editor-fold desc="Logo pane">
+        // Panel containing the title/logo
+        // TODO: create a proper logo
         JPanel logoPane = new JPanel();
         JLabel logo = new JLabel("NeoSavegameScavenger");
         logo.setForeground(Color.white);
@@ -125,6 +125,7 @@ public class NeoSavegameScavenger extends JFrame {
         //</editor-fold>
 
         //<editor-fold desc="Central pane">
+        // Central part of the layout, contains the backup and restore sections.
         JPanel centerPane = new JPanel();
         centerPane.setLayout(new BoxLayout(centerPane, BoxLayout.LINE_AXIS));
         centerPane.setBackground(backgroundColor);
@@ -132,6 +133,7 @@ public class NeoSavegameScavenger extends JFrame {
         centerPane.add(Box.createHorizontalGlue());
 
         //<editor-fold desc="Backup panel">
+        // This panel holds the backup button and the options and help buttons.
         JPanel backupPanel = new JPanel();
         backupPanel.setLayout(new BoxLayout(backupPanel, BoxLayout.PAGE_AXIS));
         backupPanel.setBackground(backgroundColor);
@@ -139,7 +141,7 @@ public class NeoSavegameScavenger extends JFrame {
 
         backupPanel.add(Box.createVerticalStrut(BTN_PANEL_Y_PADDING));
 
-        backupBtn = new JButton("Quick Backup");
+        backupBtn = new JButton("Backup");
         backupBtn.setAlignmentX(CENTER_ALIGNMENT);
         backupBtn.addActionListener(inManager);
         backupBtn.setMargin(new java.awt.Insets(INSETS_Y, INSETS_X, INSETS_Y, INSETS_X));
@@ -147,7 +149,8 @@ public class NeoSavegameScavenger extends JFrame {
         backupPanel.add(backupBtn);
 
         backupPanel.add(Box.createVerticalStrut(BTN_OFFSET));
-        //<editor-fold desc="Utility buttons panel">    
+        //<editor-fold desc="Utility buttons panel">   
+        // Small buttons for the options menu and help file go here.
         JPanel utilBtnPanel = new JPanel();
         utilBtnPanel.setLayout(new BoxLayout(utilBtnPanel, BoxLayout.LINE_AXIS));
         utilBtnPanel.setBackground(backgroundColor);
@@ -158,7 +161,6 @@ public class NeoSavegameScavenger extends JFrame {
         optionsBtn.addActionListener(inManager);
         optionsBtn.setMargin(new java.awt.Insets(INSETS_Y, INSETS_Y, INSETS_Y, INSETS_Y));
         optionsBtn.setToolTipText("Open options menu");
-        utilBtnPanel.add(optionsBtn);
         utilBtnPanel.add(optionsBtn);
 
         utilBtnPanel.add(Box.createRigidArea(new Dimension(BTN_OFFSET, BTN_OFFSET)));
@@ -188,6 +190,7 @@ public class NeoSavegameScavenger extends JFrame {
         centerPane.add(Box.createHorizontalGlue());
 
         //<editor-fold desc="Restore panel">
+        // Panel with all the restore buttons, plus the clear button.
         JPanel restorePanel = new JPanel();
         restorePanel.setLayout(new BoxLayout(restorePanel, BoxLayout.PAGE_AXIS));
         restorePanel.setBackground(backgroundColor);
@@ -254,7 +257,8 @@ public class NeoSavegameScavenger extends JFrame {
             File saveBak = new File("" + backupFolderPath + "/" + date.format(Calendar.getInstance().getTime()));
             saveBak.mkdir();
             if (!saveBak.exists()) {
-                System.err.println("Error: Directory not created");
+                //System.err.println("Error: Directory not created");
+                JOptionPane.showMessageDialog(this, "Failed to create the new save backup.", "Backup error", JOptionPane.ERROR_MESSAGE);
             } else {
                 //System.out.println("Created backup: " + date.format(Calendar.getInstance().getTime()));
             }
@@ -362,7 +366,7 @@ public class NeoSavegameScavenger extends JFrame {
         int confirmation = JOptionPane.showConfirmDialog(this,
                 "Are you sure you want to clear your current savegame?\nAll files in the savegame folder will be DELETED.", "Confirm clear savegame", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
         if (confirmation == 0) {
-            // Perform the actual restore
+            // Delete everything!
             File saveFolder = new File(savegameFolderPath);
             if (saveFolder.exists()) {
                 for (String s : saveFileNames) {

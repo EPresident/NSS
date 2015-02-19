@@ -46,10 +46,6 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
-/**
- *
- * @author Utente
- */
 public class OptionsFrame extends JFrame {
 
     private final InputManager inManager;
@@ -61,13 +57,12 @@ public class OptionsFrame extends JFrame {
     public OptionsFrame(NeoSavegameScavenger nss) {
         parent = nss;
         inManager = new InputManager();
-        setBounds(50, 30, 350, 175);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setUndecorated(true);
+        setBounds(50, 30, 650, 220);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setUndecorated(false);
         setTitle("NeoSavegameScavenger - Options");
-        rootPane.setBorder(BorderFactory.createLineBorder(Color.black, 2, true));
         backgroundColor = parent.getBgColor();
-        setResizable(false);
+        setResizable(true);
         setFocusable(true);
         addKeyListener(inManager);
 
@@ -137,6 +132,7 @@ public class OptionsFrame extends JFrame {
         //</editor-fold>
 
         panel.add(Box.createVerticalGlue());
+        panel.add(Box.createVerticalStrut(10));
 
         //<editor-fold desc="Buttons panel">
         JPanel btnPanel = new JPanel();
@@ -209,6 +205,9 @@ public class OptionsFrame extends JFrame {
         }
     }
 
+    /**
+     * Read config file for text field initialization and request focus.
+     */
     private void init() {
         File config = new File("./config.txt");
         if (config.exists()) {
