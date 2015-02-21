@@ -29,6 +29,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.io.File;
 import java.io.FilenameFilter;
+import java.util.Arrays;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.DefaultListModel;
@@ -126,18 +127,14 @@ public class RestoreFrame extends JFrame {
         File backupFolder = new File(parent.backupFolderPath);
         if (backupFolder.exists()) {
             // get all backup names
-            String[] subDirs = backupFolder.list(new FilenameFilter() {
-                @Override
-                public boolean accept(File current, String name) {
-                    return new File(current, name).isDirectory();
-                }
-            });
+            String[] subDirs = backupFolder.list(parent.bkpFolderFilter);
+            Arrays.sort(subDirs);
             for (String bak : subDirs) {
                 listModel.addElement(bak);
             }
             requestFocus();
         } else {
-            JOptionPane.showMessageDialog(this, "Error: the backup folder doens't exist!", "Backup folder not found", JOptionPane.ERROR_MESSAGE);           
+            JOptionPane.showMessageDialog(this, "Error: the backup folder doesn't exist!", "Backup folder not found", JOptionPane.ERROR_MESSAGE);           
             closeWindow();
         }
     }

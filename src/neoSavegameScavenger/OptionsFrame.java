@@ -42,6 +42,7 @@ import static javax.swing.BoxLayout.PAGE_AXIS;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
@@ -173,35 +174,84 @@ public class OptionsFrame extends JFrame {
      * menu, then close the window.
      */
     private void applyChanges() {
-        File config = new File("./config.txt");
-        // Check if the config file exists
-        if (!config.exists()) {
-            //Create the config file
+        // Validate paths before recording
+        if (validatePaths(op1Field.getText(), op2Field.getText())) {
+            File config = new File("./config.txt");
+            // Check if the config file exists
+            if (!config.exists()) {
+                //Create the config file
+                try {
+                    config.createNewFile();
+                } catch (java.io.IOException ex) {
+                    System.err.println("Can't create the config file: " + ex.getMessage());
+                }
+            }
+            // Write on the config
             try {
-                config.createNewFile();
-            } catch (java.io.IOException ex) {
-                System.err.println("Can't create the config file: " + ex.getMessage());
+                BufferedWriter out = new BufferedWriter(new FileWriter(config));
+                String s = "# Config file for Neo Savegame Scavenger, DO NOT MODIFY MANUALLY!";
+                out.write(s);
+                out.newLine();
+                s = "SaveFolderPath=" + op1Field.getText();
+                out.write(s);
+                out.newLine();
+                s = "BackupFolderPath=" + op2Field.getText();
+                out.write(s);
+                out.newLine();
+                out.close();
+            } catch (IOException ex) {
+                System.err.println("I/O Write Failure: " + ex.getMessage());
+            } finally {
+                closeWindow();
+                parent.readConfig();
             }
         }
-        // Write on the config
-        try {
-            BufferedWriter out = new BufferedWriter(new FileWriter(config));
-            String s = "# Config file for Neo Savegame Scavenger, DO NOT MODIFY MANUALLY!";
-            out.write(s);
-            out.newLine();
-            s = "SaveFolderPath=" + op1Field.getText();
-            out.write(s);
-            out.newLine();
-            s = "BackupFolderPath=" + op2Field.getText();
-            out.write(s);
-            out.newLine();
-            out.close();
-        } catch (IOException ex) {
-            System.err.println("I/O Write Failure: " + ex.getMessage());
-        } finally {
-            closeWindow();
-            parent.readConfig();
+    }
+
+    /**
+     * Makes sure the user inserted valid paths in the options menu.
+     *
+     * @param savPath Absolute path to the savegame folder.
+     * @param bkpPath Absolute path to the backup folder.
+     * @return true if the paths are valid.
+     */
+    private boolean validatePaths(String savPath, String bkpPath) {
+        File saveDir = new File(savPath);
+        File backDir = new File(bkpPath);
+        boolean val1 = saveDir.exists() && saveDir.isDirectory(),
+                val2 = backDir.exists() && backDir.isDirectory();
+        if (val1 && val2) {
+            return true;
+        } else {
+            if (!val1) {
+                JOptionPane.showMessageDialog(this, "The path you specified for the savegame folder is invalid."
+                        + " Please insert a valid one.", "Invalid savegame path", JOptionPane.ERROR_MESSAGE);
+                return false;
+            }
+            if (!val2) {
+                //<editor-fold desc="Ask to create the backup directory">
+                int confirmation = JOptionPane.showConfirmDialog(this,
+                        "The specified backup folder doesn't exist. Do you want to create it?",
+                        "Invalid backup path", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+                if (confirmation == 0) {
+                    // Create the new backup directory
+                    backDir.mkdirs();
+                    // Check if creation succeded
+                    if (!backDir.exists()) {
+                        JOptionPane.showMessageDialog(this, "Failed to create the backup folder!", "Creation failure", JOptionPane.ERROR_MESSAGE);
+                        return false;
+                    }
+                    return true;
+                } else {
+                    // Failure
+                    JOptionPane.showMessageDialog(this, "The path you specified for the backup folder is invalid."
+                        + " Please insert a valid one.", "Invalid backup path", JOptionPane.ERROR_MESSAGE);
+                    return false;
+                }
+                //</editor-fold>
+            }
         }
+        return false;
     }
 
     /**
